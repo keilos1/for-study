@@ -8,21 +8,16 @@ import statsmodels.api as sm
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from statsmodels.graphics.gofplots import qqplot
 
-# Настройка отображения
-pd.set_option('display.max_columns', None)
-pd.set_option('display.width', 1000)
-plt.style.use('seaborn')
-plt.rcParams['figure.figsize'] = (10, 6)
 
 # 1. Загрузка данных
 print("1. ЗАГРУЗКА ДАННЫХ")
-data = pd.read_excel('ishodnye.xlsx', sheet_name='Задание 4')
-print("\nПервые 5 строк данных:")
-print(data.head())
+data = pd.read_excel("iskhodnye.xlsx", sheet_name="Задание 4")
+data_clean = data.replace([np.inf, -np.inf], np.nan).dropna()
+X = data_clean[["X1", "X2", "X3", "X4", "X5"]]
+Y = data_clean["Y"]
 
 # 2. Корреляционный анализ
 print("\n2. КОРРЕЛЯЦИОННЫЙ АНАЛИЗ")
-X = data[['X1', 'X2', 'X3', 'X4', 'X5']]
 
 # Корреляционная матрица Пирсона
 corr_matrix = X.corr(method='pearson')
@@ -81,7 +76,7 @@ print(f"Хи-квадрат: χ² = {chi2:.3f}, p = {p:.4f}")
 # 4. Линейная регрессия Y на X1-X5
 print("\n4. ЛИНЕЙНАЯ РЕГРЕССИЯ Y на X1-X5")
 X_lin = sm.add_constant(X)
-model_lin = sm.OLS(data['Y'], X_lin).fit()
+model_lin = sm.OLS(Y, X_lin).fit()
 print(model_lin.summary())
 
 # Анализ мультиколлинеарности
@@ -93,8 +88,8 @@ print(vif_data)
 
 # График предсказанных vs наблюдаемых значений
 plt.figure()
-plt.scatter(data['Y'], model_lin.predict(X_lin), alpha=0.6)
-plt.plot([data['Y'].min(), data['Y'].max()], [data['Y'].min(), data['Y'].max()], 'r--')
+plt.scatter(Y, model_lin.predict(X_lin), alpha=0.6)
+plt.plot([Y.min(), Y.max()], [Y.min(), Y.max()], 'r--')
 plt.xlabel('Наблюдаемые Y')
 plt.ylabel('Предсказанные Y')
 plt.title('Линейная модель: предсказанные vs наблюдаемые')
@@ -145,7 +140,7 @@ for col in ['X1', 'X2', 'X3', 'X4', 'X5']:
 # Показательная модель
 print("\nПоказательная модель (линеаризация Y):")
 X_exp = sm.add_constant(X)
-y_exp = np.log(data['Y'])
+y_exp = np.log(Y)
 model_exp = sm.OLS(y_exp, X_exp).fit()
 print(model_exp.summary())
 
