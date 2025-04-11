@@ -1,5 +1,15 @@
-C:\Users\Student\PycharmProjects\pythonProject4\venv\Scripts\python.exe C:/Users/Student/PycharmProjects/pythonProject4/lab4.mat.stat2.py
-1. ЗАГРУЗКА ДАННЫХ
+1. ЗАГРУЗКА И ОЧИСТКА ДАННЫХ
+
+Исходное количество строк: 108
+Количество строк после очистки: 66
+
+Первые 5 строк очищенных данных:
+          Y       X1      X2       X3    X4     X5
+0  226007.5  67576.7  5636.0  18881.0  1.72  108.2
+1  308331.0  18619.2   947.0  24525.0  1.73  109.3
+3  199229.1    693.5    41.0  16839.0  1.48  111.8
+4   97382.2    571.6    52.0  13298.0  1.40  122.1
+5  131342.5    703.6    46.0  12424.0  1.55  117.3
 
 2. КОРРЕЛЯЦИОННЫЙ АНАЛИЗ
 
@@ -29,7 +39,7 @@ Dep. Variable:                      Y   R-squared:                       0.128
 Model:                            OLS   Adj. R-squared:                  0.055
 Method:                 Least Squares   F-statistic:                     1.757
 Date:                Fri, 11 Apr 2025   Prob (F-statistic):              0.136
-Time:                        14:00:29   Log-Likelihood:                -872.41
+Time:                        14:24:50   Log-Likelihood:                -872.41
 No. Observations:                  66   AIC:                             1757.
 Df Residuals:                      60   BIC:                             1770.
 Df Model:                           5                                         
@@ -77,7 +87,7 @@ Dep. Variable:                      Y   R-squared:                       0.114
 Model:                            OLS   Adj. R-squared:                  0.040
 Method:                 Least Squares   F-statistic:                     1.537
 Date:                Fri, 11 Apr 2025   Prob (F-statistic):              0.192
-Time:                        14:00:52   Log-Likelihood:                -872.94
+Time:                        14:24:53   Log-Likelihood:                -872.94
 No. Observations:                  66   AIC:                             1758.
 Df Residuals:                      60   BIC:                             1771.
 Df Model:                           5                                         
@@ -110,7 +120,7 @@ Dep. Variable:                      Y   R-squared:                       0.119
 Model:                            OLS   Adj. R-squared:                  0.046
 Method:                 Least Squares   F-statistic:                     1.621
 Date:                Fri, 11 Apr 2025   Prob (F-statistic):              0.168
-Time:                        14:00:52   Log-Likelihood:                -44.599
+Time:                        14:24:53   Log-Likelihood:                -44.599
 No. Observations:                  66   AIC:                             101.2
 Df Residuals:                      60   BIC:                             114.3
 Df Model:                           5                                         
@@ -151,7 +161,7 @@ Dep. Variable:                      Y   R-squared:                       0.150
 Model:                            OLS   Adj. R-squared:                  0.079
 Method:                 Least Squares   F-statistic:                     2.115
 Date:                Fri, 11 Apr 2025   Prob (F-statistic):             0.0759
-Time:                        14:00:52   Log-Likelihood:                -43.423
+Time:                        14:24:53   Log-Likelihood:                -43.423
 No. Observations:                  66   AIC:                             98.85
 Df Residuals:                      60   BIC:                             112.0
 Df Model:                           5                                         
@@ -188,8 +198,8 @@ X5: -0.0025
 6. СРАВНЕНИЕ МОДЕЛЕЙ
 
 Сравнение моделей:
-         Модель       R²  Adj. R²         AIC         BIC
-       Линейная 0.127700 0.055008 1756.815400 1769.953329
-Логарифмическая 0.113559 0.039689 1757.876720 1771.014648
-      Степенная 0.118978 0.045559  101.197669  114.335598
-  Показательная 0.149816 0.078968   98.846072  111.984000
+         Модель       R²  Adj. R²         AIC         BIC  Кол-во наблюдений
+       Линейная 0.127700 0.055008 1756.815400 1769.953329               66.0
+Логарифмическая 0.113559 0.039689 1757.876720 1771.014648               66.0
+      Степенная 0.118978 0.045559  101.197669  114.335598               66.0
+  Показательная 0.149816 0.078968   98.846072  111.984000               66.0
