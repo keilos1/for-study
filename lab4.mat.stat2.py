@@ -8,15 +8,10 @@ import statsmodels.api as sm
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from statsmodels.graphics.gofplots import qqplot
 
-# Настройка отображения
-pd.set_option('display.max_columns', None)
-pd.set_option('display.width', 1000)
-plt.style.use('seaborn')
-plt.rcParams['figure.figsize'] = (10, 6)
 
 # 1. Загрузка и очистка данных
 print("1. ЗАГРУЗКА И ОЧИСТКА ДАННЫХ")
-data = pd.read_excel('ishodnye.xlsx', sheet_name='Задание 4')
+data = pd.read_excel('iskhodnye.xlsx', sheet_name='Задание 4')
 
 # Очистка данных
 def clean_data(df):
@@ -106,7 +101,7 @@ print(vif_data)
 # График предсказанных vs наблюдаемых значений
 plt.figure()
 plt.scatter(data_clean['Y'], model_lin.predict(X_lin), alpha=0.6)
-plt.plot([data_clean['Y'].min(), data_clean['Y'].max()], 
+plt.plot([data_clean['Y'].min(), data_clean['Y'].max()],
          [data_clean['Y'].min(), data_clean['Y'].max()], 'r--')
 plt.xlabel('Наблюдаемые Y')
 plt.ylabel('Предсказанные Y')
