@@ -1,0 +1,195 @@
+C:\Users\Student\PycharmProjects\pythonProject4\venv\Scripts\python.exe C:/Users/Student/PycharmProjects/pythonProject4/lab4.mat.stat2.py
+1. ЗАГРУЗКА ДАННЫХ
+
+2. КОРРЕЛЯЦИОННЫЙ АНАЛИЗ
+
+Корреляционная матрица (Пирсон):
+          X1        X2        X3        X4        X5
+X1  1.000000  0.983946  0.124089  0.093145 -0.067666
+X2  0.983946  1.000000  0.063359  0.051174 -0.075329
+X3  0.124089  0.063359  1.000000  0.673604 -0.361537
+X4  0.093145  0.051174  0.673604  1.000000 -0.076887
+X5 -0.067666 -0.075329 -0.361537 -0.076887  1.000000
+
+Диаграммы рассеивания для значимых пар (p < 0.05):
+
+3. АНАЛИЗ ПАРЫ С НАИБОЛЬШЕЙ КОРРЕЛЯЦИЕЙ
+
+Пара с наибольшей корреляцией: X1 и X2 (r = 0.984)
+
+Результаты тестов:
+Спирмен: rho = 0.664, p = 0.0000
+Кендалл: tau = 0.513, p = 0.0000
+Хи-квадрат: χ² = 66.000, p = 0.0000
+
+4. ЛИНЕЙНАЯ РЕГРЕССИЯ Y на X1-X5
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                      Y   R-squared:                       0.128
+Model:                            OLS   Adj. R-squared:                  0.055
+Method:                 Least Squares   F-statistic:                     1.757
+Date:                Fri, 11 Apr 2025   Prob (F-statistic):              0.136
+Time:                        14:00:29   Log-Likelihood:                -872.41
+No. Observations:                  66   AIC:                             1757.
+Df Residuals:                      60   BIC:                             1770.
+Df Model:                           5                                         
+Covariance Type:            nonrobust                                         
+==============================================================================
+                 coef    std err          t      P>|t|      [0.025      0.975]
+------------------------------------------------------------------------------
+const        2.25e+05   3.08e+05      0.730      0.468   -3.91e+05    8.42e+05
+X1            16.2822     12.324      1.321      0.191      -8.369      40.934
+X2          -194.6351    150.101     -1.297      0.200    -494.882     105.612
+X3             1.7577      3.935      0.447      0.657      -6.114       9.630
+X4          1.029e+05   1.04e+05      0.988      0.327   -1.05e+05    3.11e+05
+X5         -2088.1336   2607.406     -0.801      0.426   -7303.721    3127.454
+==============================================================================
+Omnibus:                       67.583   Durbin-Watson:                   2.461
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):              468.724
+Skew:                           2.998   Prob(JB):                    1.65e-102
+Kurtosis:                      14.597   Cond. No.                     3.29e+05
+==============================================================================
+
+Notes:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+[2] The condition number is large, 3.29e+05. This might indicate that there are
+strong multicollinearity or other numerical problems.
+
+Проверка на мультиколлинеарность (VIF):
+  Переменная         VIF
+0      const  321.398971
+1         X1   36.976167
+2         X2   36.658302
+3         X3    2.460242
+4         X4    1.948220
+5         X5    1.270580
+
+Анализ остатков:
+Среднее: -0.0000
+Стандартное отклонение: 134187.5449
+
+5. НЕЛИНЕЙНЫЕ РЕГРЕССИИ
+
+Логарифмическая модель (линеаризация X):
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                      Y   R-squared:                       0.114
+Model:                            OLS   Adj. R-squared:                  0.040
+Method:                 Least Squares   F-statistic:                     1.537
+Date:                Fri, 11 Apr 2025   Prob (F-statistic):              0.192
+Time:                        14:00:52   Log-Likelihood:                -872.94
+No. Observations:                  66   AIC:                             1758.
+Df Residuals:                      60   BIC:                             1771.
+Df Model:                           5                                         
+Covariance Type:            nonrobust                                         
+==============================================================================
+                 coef    std err          t      P>|t|      [0.025      0.975]
+------------------------------------------------------------------------------
+const      -2.123e+05   1.86e+06     -0.114      0.909   -3.93e+06     3.5e+06
+X1         -1.145e+04    2.6e+04     -0.440      0.661   -6.35e+04    4.06e+04
+X2          1.384e+04    2.8e+04      0.495      0.622   -4.21e+04    6.98e+04
+X3          9.604e+04   7.62e+04      1.261      0.212   -5.63e+04    2.48e+05
+X4          1.671e+05   1.57e+05      1.064      0.291   -1.47e+05    4.81e+05
+X5         -1.242e+05    3.1e+05     -0.400      0.690   -7.45e+05    4.97e+05
+==============================================================================
+Omnibus:                       60.820   Durbin-Watson:                   2.363
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):              347.934
+Skew:                           2.688   Prob(JB):                     2.80e-76
+Kurtosis:                      12.881   Cond. No.                     1.46e+03
+==============================================================================
+
+Notes:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+[2] The condition number is large, 1.46e+03. This might indicate that there are
+strong multicollinearity or other numerical problems.
+
+Степенная модель (линеаризация X и Y):
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                      Y   R-squared:                       0.119
+Model:                            OLS   Adj. R-squared:                  0.046
+Method:                 Least Squares   F-statistic:                     1.621
+Date:                Fri, 11 Apr 2025   Prob (F-statistic):              0.168
+Time:                        14:00:52   Log-Likelihood:                -44.599
+No. Observations:                  66   AIC:                             101.2
+Df Residuals:                      60   BIC:                             114.3
+Df Model:                           5                                         
+Covariance Type:            nonrobust                                         
+==============================================================================
+                 coef    std err          t      P>|t|      [0.025      0.975]
+------------------------------------------------------------------------------
+const          8.0045      6.583      1.216      0.229      -5.164      21.173
+X1             0.0154      0.092      0.167      0.868      -0.169       0.200
+X2            -0.0063      0.099     -0.063      0.950      -0.204       0.192
+X3             0.3691      0.270      1.368      0.176      -0.171       0.909
+X4             0.5615      0.556      1.009      0.317      -0.551       1.674
+X5             0.0213      1.100      0.019      0.985      -2.179       2.221
+==============================================================================
+Omnibus:                       14.748   Durbin-Watson:                   2.198
+Prob(Omnibus):                  0.001   Jarque-Bera (JB):               18.158
+Skew:                           0.948   Prob(JB):                     0.000114
+Kurtosis:                       4.735   Cond. No.                     1.46e+03
+==============================================================================
+
+Notes:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+[2] The condition number is large, 1.46e+03. This might indicate that there are
+strong multicollinearity or other numerical problems.
+
+Коэффициенты степенной модели (Y = a * X1^b1 * X2^b2 * ...):
+a = 2994.5404
+X1: 0.0154
+X2: -0.0063
+X3: 0.3691
+X4: 0.5615
+X5: 0.0213
+
+Показательная модель (линеаризация Y):
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                      Y   R-squared:                       0.150
+Model:                            OLS   Adj. R-squared:                  0.079
+Method:                 Least Squares   F-statistic:                     2.115
+Date:                Fri, 11 Apr 2025   Prob (F-statistic):             0.0759
+Time:                        14:00:52   Log-Likelihood:                -43.423
+No. Observations:                  66   AIC:                             98.85
+Df Residuals:                      60   BIC:                             112.0
+Df Model:                           5                                         
+Covariance Type:            nonrobust                                         
+==============================================================================
+                 coef    std err          t      P>|t|      [0.025      0.975]
+------------------------------------------------------------------------------
+const         11.5463      1.081     10.678      0.000       9.383      13.709
+X1            7.8e-05   4.32e-05      1.804      0.076   -8.49e-06       0.000
+X2            -0.0009      0.001     -1.705      0.093      -0.002       0.000
+X3          5.415e-06   1.38e-05      0.392      0.696   -2.22e-05     3.3e-05
+X4             0.3934      0.365      1.077      0.286      -0.338       1.124
+X5            -0.0025      0.009     -0.276      0.783      -0.021       0.016
+==============================================================================
+Omnibus:                       20.471   Durbin-Watson:                   2.273
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):               30.787
+Skew:                           1.166   Prob(JB):                     2.06e-07
+Kurtosis:                       5.399   Cond. No.                     3.29e+05
+==============================================================================
+
+Notes:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+[2] The condition number is large, 3.29e+05. This might indicate that there are
+strong multicollinearity or other numerical problems.
+
+Коэффициенты показательной модели (Y = a * exp(b1*X1 + b2*X2 + ...)):
+a = 103390.5072
+X1: 0.0001
+X2: -0.0009
+X3: 0.0000
+X4: 0.3934
+X5: -0.0025
+
+6. СРАВНЕНИЕ МОДЕЛЕЙ
+
+Сравнение моделей:
+         Модель       R²  Adj. R²         AIC         BIC
+       Линейная 0.127700 0.055008 1756.815400 1769.953329
+Логарифмическая 0.113559 0.039689 1757.876720 1771.014648
+      Степенная 0.118978 0.045559  101.197669  114.335598
+  Показательная 0.149816 0.078968   98.846072  111.984000
