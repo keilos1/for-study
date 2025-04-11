@@ -8,16 +8,33 @@ import statsmodels.api as sm
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from statsmodels.graphics.gofplots import qqplot
 
+# Настройка отображения
+pd.set_option('display.max_columns', None)
+pd.set_option('display.width', 1000)
+plt.style.use('seaborn')
+plt.rcParams['figure.figsize'] = (10, 6)
 
-# 1. Загрузка данных
-print("1. ЗАГРУЗКА ДАННЫХ")
-data = pd.read_excel("iskhodnye.xlsx", sheet_name="Задание 4")
-data_clean = data.replace([np.inf, -np.inf], np.nan).dropna()
-X = data_clean[["X1", "X2", "X3", "X4", "X5"]]
-Y = data_clean["Y"]
+# 1. Загрузка и очистка данных
+print("1. ЗАГРУЗКА И ОЧИСТКА ДАННЫХ")
+data = pd.read_excel('ishodnye.xlsx', sheet_name='Задание 4')
+
+# Очистка данных
+def clean_data(df):
+    # Замена бесконечностей на NaN
+    df = df.replace([np.inf, -np.inf], np.nan)
+    # Удаление строк с пропусками
+    df = df.dropna()
+    return df
+
+data_clean = clean_data(data)
+print(f"\nИсходное количество строк: {len(data)}")
+print(f"Количество строк после очистки: {len(data_clean)}")
+print("\nПервые 5 строк очищенных данных:")
+print(data_clean.head())
 
 # 2. Корреляционный анализ
 print("\n2. КОРРЕЛЯЦИОННЫЙ АНАЛИЗ")
+X = data_clean[['X1', 'X2', 'X3', 'X4', 'X5']]
 
 # Корреляционная матрица Пирсона
 corr_matrix = X.corr(method='pearson')
@@ -76,7 +93,7 @@ print(f"Хи-квадрат: χ² = {chi2:.3f}, p = {p:.4f}")
 # 4. Линейная регрессия Y на X1-X5
 print("\n4. ЛИНЕЙНАЯ РЕГРЕССИЯ Y на X1-X5")
 X_lin = sm.add_constant(X)
-model_lin = sm.OLS(Y, X_lin).fit()
+model_lin = sm.OLS(data_clean['Y'], X_lin).fit()
 print(model_lin.summary())
 
 # Анализ мультиколлинеарности
@@ -88,8 +105,9 @@ print(vif_data)
 
 # График предсказанных vs наблюдаемых значений
 plt.figure()
-plt.scatter(Y, model_lin.predict(X_lin), alpha=0.6)
-plt.plot([Y.min(), Y.max()], [Y.min(), Y.max()], 'r--')
+plt.scatter(data_clean['Y'], model_lin.predict(X_lin), alpha=0.6)
+plt.plot([data_clean['Y'].min(), data_clean['Y'].max()], 
+         [data_clean['Y'].min(), data_clean['Y'].max()], 'r--')
 plt.xlabel('Наблюдаемые Y')
 plt.ylabel('Предсказанные Y')
 plt.title('Линейная модель: предсказанные vs наблюдаемые')
@@ -117,16 +135,15 @@ print("\n5. НЕЛИНЕЙНЫЕ РЕГРЕССИИ")
 
 # Логарифмическая модель
 print("\nЛогарифмическая модель (линеаризация X):")
-X_log = X.apply(np.log).replace([-np.inf, np.inf], np.nan).dropna()
+X_log = X.apply(lambda x: np.log(x + 1e-9))  # Добавляем малое значение для избежания log(0)
 X_log = sm.add_constant(X_log)
-y_log = data['Y'].iloc[X_log.index]
-model_log = sm.OLS(y_log, X_log).fit()
+model_log = sm.OLS(data_clean['Y'], X_log).fit()
 print(model_log.summary())
 
 # Степенная модель
 print("\nСтепенная модель (линеаризация X и Y):")
-X_pow = X.apply(np.log).replace([-np.inf, np.inf], np.nan).dropna()
-y_pow = np.log(data['Y']).iloc[X_pow.index]
+X_pow = X.apply(lambda x: np.log(x + 1e-9))
+y_pow = np.log(data_clean['Y'] + 1e-9)
 X_pow = sm.add_constant(X_pow)
 model_pow = sm.OLS(y_pow, X_pow).fit()
 print(model_pow.summary())
@@ -140,7 +157,7 @@ for col in ['X1', 'X2', 'X3', 'X4', 'X5']:
 # Показательная модель
 print("\nПоказательная модель (линеаризация Y):")
 X_exp = sm.add_constant(X)
-y_exp = np.log(Y)
+y_exp = np.log(data_clean['Y'] + 1e-9)
 model_exp = sm.OLS(y_exp, X_exp).fit()
 print(model_exp.summary())
 
@@ -164,7 +181,8 @@ comparison = pd.DataFrame({
     'R²': [m.rsquared for m in models.values()],
     'Adj. R²': [m.rsquared_adj for m in models.values()],
     'AIC': [m.aic for m in models.values()],
-    'BIC': [m.bic for m in models.values()]
+    'BIC': [m.bic for m in models.values()],
+    'Кол-во наблюдений': [m.nobs for m in models.values()]
 })
 
 print("\nСравнение моделей:")
