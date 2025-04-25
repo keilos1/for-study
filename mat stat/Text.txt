@@ -1,102 +1,71 @@
 import pandas as pd
-import numpy as np
 import statsmodels.api as sm
 from statsmodels.formula.api import ols
+from scipy import stats
 
+# Загрузка данных (предполагаем, что данные в столбцах 'С', 'Ю', 'Ц', 'Y', 'B')
+data = pd.read_excel("ishodnye.xlsx", sheet_name="Задание 5")
 
-def load_and_clean_data():
-    """Загрузка и очистка данных из файла"""
-    try:
-        # Загрузка данных с явным указанием заголовка
-        df = pd.read_excel('iskhodnye.xlsx', sheet_name='Задание 5', header=0)
-        print(f"Загружено строк: {len(df)}")
+# =============================================
+# ЗАДАЧА 5.1: Проверка влияния региона (фактор A) на Y
+# =============================================
 
-        # Проверка необходимых столбцов
-        required_cols = ['С', 'Ю', 'Ц', 'Y', 'B']
-        if not all(col in df.columns for col in required_cols):
-            raise ValueError(f"Отсутствуют необходимые столбцы. Ожидались: {required_cols}")
+# Преобразуем данные из широкого формата в длинный (если нужно)
+data_long = pd.melt(data, value_vars=['С', 'Ю', 'Ц'], var_name='Region', value_name='Y')
 
-        # Глубокая очистка данных
-        df_clean = df.replace([np.inf, -np.inf], np.nan)
-        
-        # Удаление строк с NaN в любом из нужных столбцов
-        df_clean = df_clean.dropna(subset=required_cols)
-        
-        # Удаление строк с нулевыми значениями в числовых столбцах
-        numeric_cols = df_clean.select_dtypes(include=[np.number]).columns
-        df_clean = df_clean[(df_clean[numeric_cols] != 0).all(axis=1)]
-        
-        print(f"Строк после очистки: {len(df_clean)}")
-        return df_clean
+# Однофакторный ANOVA
+model_1way = ols('Y ~ C(Region)', data=data_long).fit()
+anova_1way = sm.stats.anova_lm(model_1way, typ=2)
 
-    except Exception as e:
-        print(f"Ошибка загрузки данных: {str(e)}")
-        return None
+print("="*50)
+print("РЕЗУЛЬТАТЫ ДЛЯ ЗАДАЧИ 5.1:")
+print("Однофакторный ANOVA (влияние региона на Y):")
+print(anova_1way)
 
+# Проверка значимости
+if anova_1way["PR(>F)"][0] < 0.05:
+    print("\nВывод: Регион значимо влияет на Y (p = {:.4f})".format(anova_1way["PR(>F)"][0]))
+else:
+    print("\nВывод: Регион НЕ влияет значимо на Y (p = {:.4f})".format(anova_1way["PR(>F)"][0]))
 
-def task_5_2(df):
-    """Анализ для задачи 5.2 с улучшенной обработкой данных"""
-    try:
-        # Подготовка данных с дополнительной проверкой
-        df_melted = pd.melt(df, id_vars=['Y', 'B'],
-                           value_vars=['С', 'Ю', 'Ц'],
-                           var_name='Region', value_name='Value')
-        
-        # Дополнительная очистка после melt
-        df_melted = df_melted.replace([np.inf, -np.inf], np.nan)
-        df_melted = df_melted.dropna()
-        
-        if len(df_melted) < 10:
-            raise ValueError(f"Недостаточно данных после очистки. Доступно строк: {len(df_melted)}")
+# =============================================
+# ЗАДАЧА 5.2: Проверка влияния региона (A) и фактора B на Y
+# =============================================
 
-        # Преобразование B в категориальный при необходимости
-        if df_melted['B'].nunique() < 5:
-            df_melted['B'] = df_melted['B'].astype('category')
-            print("\nФактор B преобразован в категориальный")
+# Двухфакторный ANOVA без взаимодействия
+model_2way = ols('Y ~ C(Region) + C(B)', data=data).fit()
+anova_2way = sm.stats.anova_lm(model_2way, typ=2)
 
-        # Проверка на inf/NaN в Y
-        if df_melted['Y'].isnull().any() or np.isinf(df_melted['Y']).any():
-            raise ValueError("Обнаружены некорректные значения в Y после преобразования")
+# Двухфакторный ANOVA с взаимодействием
+model_interaction = ols('Y ~ C(Region) * C(B)', data=data).fit()
+anova_interaction = sm.stats.anova_lm(model_interaction, typ=2)
 
-        print("\n=== Задача 5.2 ===")
-        print(f"Доступно строк для анализа: {len(df_melted)}")
+print("\n" + "="*50)
+print("РЕЗУЛЬТАТЫ ДЛЯ ЗАДАЧИ 5.2:")
+print("\nДвухфакторный ANOVA без взаимодействия:")
+print(anova_2way)
+print("\nДвухфакторный ANOVA с взаимодействием:")
+print(anova_interaction)
 
-        # Модель с взаимодействием
-        model_with_int = ols('Y ~ C(Region) * C(B)', data=df_melted).fit()
-        anova_with_int = sm.stats.anova_lm(model_with_int, typ=2)
-        print("\nРезультаты двухфакторного ANOVA с взаимодействием:")
-        print(anova_with_int)
+# Проверка значимости взаимодействия
+interaction_p = anova_interaction["PR(>F)"][2]
+if interaction_p < 0.05:
+    print("\nВывод: Взаимодействие региона и фактора B значимо (p = {:.4f})".format(interaction_p))
+    print("Рекомендуется использовать модель с взаимодействием.")
+else:
+    print("\nВывод: Взаимодействие региона и фактора B НЕзначимо (p = {:.4f})".format(interaction_p))
+    print("Можно использовать модель без взаимодействия.")
 
-        # Проверка значимости с защитой от отсутствующих терминов
-        terms_to_check = ['C(Region)', 'C(B)', 'C(Region):C(B)']
-        for term in terms_to_check:
-            if term in anova_with_int.index:
-                p_value = anova_with_int.loc[term, 'PR(>F)']
-                print(f"{term}: {'значимо' if p_value < 0.05 else 'не значимо'} (p={p_value:.4f})")
-            else:
-                print(f"Термин {term} отсутствует в ANOVA таблице")
+# Проверка остатков на нормальность для лучшей модели
+best_model = model_interaction if interaction_p < 0.05 else model_2way
+residuals = best_model.resid
+shapiro_test = stats.shapiro(residuals)
 
-    except Exception as e:
-        print(f"\nОшибка в задаче 5.2: {str(e)}")
-        # Дополнительная диагностика
-        if 'df_melted' in locals():
-            print("\nДиагностическая информация:")
-            print("Пропущенные значения по столбцам:")
-            print(df_melted.isnull().sum())
-            print("\nОписательная статистика Y:")
-            print(df_melted['Y'].describe())
-
-
-def main():
-    # Загрузка и очистка данных
-    df = load_and_clean_data()
-    if df is None or len(df) == 0:
-        print("Невозможно продолжить - данные не загружены или пусты")
-        return
-
-    # Выполнение анализа
-    task_5_2(df)
-
-
-if __name__ == "__main__":
-    main()
+print("\n" + "="*50)
+print("ПРОВЕРКА ОСТАТКОВ ЛУЧШЕЙ МОДЕЛИ:")
+print("Тест Шапиро-Уилка на нормальность остатков:")
+print("Статистика: {:.4f}, p-value: {:.4f}".format(shapiro_test[0], shapiro_test[1]))
+if shapiro_test[1] > 0.05:
+    print("Остатки распределены нормально.")
+else:
+    print("Остатки НЕ распределены нормально!")
