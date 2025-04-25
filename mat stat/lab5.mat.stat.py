@@ -50,48 +50,63 @@ else:
 # ЗАДАЧА 5.2: Проверка влияния региона (A) и фактора B на Y
 # =============================================
 
-# Проверяем наличие столбца B
-if 'B' not in data.columns:
-    raise ValueError("Столбец 'B' не найден в данных. Проверьте названия столбцов.")
+# Создаем правильный объединенный датафрейм
+combined_data = pd.DataFrame()
 
-# Для двухфакторного ANOVA используем исходный DataFrame
-# (предполагаем, что он содержит 'Region' или можем создать его)
-# Создаем объединенный датафрейм
-regions = []
-y_values = []
-b_values = []
+# Для каждого региона добавляем соответствующие значения Y и B
+for region in ['С', 'Ю', 'Ц']:
+    # Создаем временный датафрейм для текущего региона
+    temp_df = pd.DataFrame({
+        'Region': region,
+        'Y': data[region],  # Значения Y для текущего региона
+        'B': data['B']      # Соответствующие значения B
+    })
+    
+    # Объединяем с основным датафреймом
+    combined_data = pd.concat([combined_data, temp_df], ignore_index=True)
 
-for region_col in ['С', 'Ю', 'Ц']:
-    regions.extend([region_col] * len(data))
-    y_values.extend(data[region_col].values)
-    b_values.extend(data['B'].values)
+# Очистка данных:
+# 1. Заменяем бесконечности на NaN
+combined_data = combined_data.replace([np.inf, -np.inf], np.nan)
+# 2. Удаляем строки с пропущенными значениями
+combined_data = combined_data.dropna()
+# 3. Проверяем, что остались данные
+if combined_data.empty:
+    raise ValueError("После очистки не осталось данных для анализа")
 
-combined_data = pd.DataFrame({
-    'Region': regions,
-    'Y': y_values,
-    'B': b_values
-}).dropna()
+# Преобразуем категориальные переменные
+combined_data['Region'] = combined_data['Region'].astype('category')
+combined_data['B'] = combined_data['B'].astype('category')
 
-# Двухфакторный ANOVA без взаимодействия
-model_2way = ols('Y ~ C(Region) + C(B)', data=combined_data).fit()
-anova_2way = sm.stats.anova_lm(model_2way, typ=2)
+# Двухфакторный ANOVA с проверкой ошибок
+try:
+    # Модель без взаимодействия
+    model_2way = ols('Y ~ C(Region) + C(B)', data=combined_data).fit()
+    anova_2way = sm.stats.anova_lm(model_2way, typ=2)
+    
+    # Модель с взаимодействием
+    model_interaction = ols('Y ~ C(Region) * C(B)', data=combined_data).fit()
+    anova_interaction = sm.stats.anova_lm(model_interaction, typ=2)
+    
+    print("\n" + "="*50)
+    print("РЕЗУЛЬТАТЫ ДЛЯ ЗАДАЧИ 5.2:")
+    print("\nДвухфакторный ANOVA без взаимодействия:")
+    print(anova_2way)
+    print("\nДвухфакторный ANOVA с взаимодействием:")
+    print(anova_interaction)
 
-# Двухфакторный ANOVA с взаимодействием
-model_interaction = ols('Y ~ C(Region) * C(B)', data=combined_data).fit()
-anova_interaction = sm.stats.anova_lm(model_interaction, typ=2)
+    # Проверка значимости взаимодействия
+    if "C(Region):C(B)" in anova_interaction.index:
+        interaction_p = anova_interaction.loc["C(Region):C(B)", "PR(>F)"]
+        print("\nВывод:", 
+              "Взаимодействие значимо (p = {:.4f})".format(interaction_p) if interaction_p < 0.05 
+              else "Взаимодействие незначимо (p = {:.4f})".format(interaction_p))
 
-print("\n" + "="*50)
-print("РЕЗУЛЬТАТЫ ДЛЯ ЗАДАЧИ 5.2:")
-print("\nДвухфакторный ANOVA без взаимодействия:")
-print(anova_2way)
-print("\nДвухфакторный ANOVA с взаимодействием:")
-print(anova_interaction)
-
-# Проверка значимости взаимодействия
-interaction_p = anova_interaction["PR(>F)"][2]
-if interaction_p < 0.05:
-    print("\nВывод: Взаимодействие региона и фактора B значимо (p = {:.4f})".format(interaction_p))
-    print("Рекомендуется использовать модель с взаимодействием.")
-else:
-    print("\nВывод: Взаимодействие региона и фактора B НЕзначимо (p = {:.4f})".format(interaction_p))
-    print("Можно использовать модель без взаимодействия.")
+except Exception as e:
+    print("\nОшибка при выполнении ANOVA:", str(e))
+    print("\nДанные для отладки:")
+    print("Размер combined_data:", combined_data.shape)
+    print("Пропущенные значения:", combined_data.isna().sum())
+    print("Уникальные значения Region:", combined_data['Region'].unique())
+    print("Уникальные значения B:", combined_data['B'].unique())
+    raise
