@@ -1,112 +1,104 @@
 import pandas as pd
+import numpy as np
 import statsmodels.api as sm
 from statsmodels.formula.api import ols
-from scipy import stats
 
 # Загрузка данных
 data = pd.read_excel("iskhodnye.xlsx", sheet_name="Задание 5")
 
+# Проверяем наличие нужных столбцов
+required_columns = ['С', 'Ю', 'Ц', 'B']
+missing_cols = [col for col in required_columns if col not in data.columns]
+if missing_cols:
+    raise ValueError(f"Не хватает столбцов: {missing_cols}")
+
+# Преобразуем широкий формат в длинный (для ANOVA по регионам)
+data_long = pd.melt(
+    data,
+    value_vars=['С', 'Ю', 'Ц'],
+    var_name='Region',
+    value_name='Y_value'
+)
+
+# Удаляем NaN и бесконечности
+data_long = data_long.replace([np.inf, -np.inf], np.nan).dropna()
+
 # =============================================
-# ЗАДАЧА 5.1: Проверка влияния региона (фактор A) на Y
+# ЗАДАЧА 5.1: ANOVA для регионов (С, Ю, Ц)
 # =============================================
-
-# Проверяем, есть ли столбец 'Y' в данных
-if 'Y' not in data.columns:
-    raise ValueError("Столбец 'Y' не найден в данных. Проверьте названия столбцов.")
-
-# Создаем DataFrame для ANOVA (преобразуем в длинный формат, если нужно)
-# Предполагаем, что данные могут быть в двух форматах:
-# 1) Отдельные столбцы для каждого региона ('С', 'Ю', 'Ц') и общий 'Y'
-# 2) Один столбец 'Region' с метками и столбец 'Y'
-
-if all(region in data.columns for region in ['С', 'Ю', 'Ц']):
-    # Если данные в широком формате (отдельные столбцы для регионов)
-    data_long = pd.melt(data,
-                       value_vars=['С', 'Ю', 'Ц'],
-                       var_name='Region',
-                       value_name='Y_value')
-    # Для ANOVA используем Y_value вместо Y
-    model_1way = ols('Y_value ~ C(Region)', data=data_long).fit()
-else:
-    # Если данные уже в длинном формате
-    if 'Region' not in data.columns:
-        raise ValueError("Не найден столбец 'Region' или столбцы регионов ('С', 'Ю', 'Ц')")
-    model_1way = ols('Y ~ C(Region)', data=data).fit()
-
+model_1way = ols('Y_value ~ C(Region)', data=data_long).fit()
 anova_1way = sm.stats.anova_lm(model_1way, typ=2)
 
-print("="*50)
+print("=" * 50)
 print("РЕЗУЛЬТАТЫ ДЛЯ ЗАДАЧИ 5.1:")
-print("Однофакторный ANOVA (влияние региона на Y):")
 print(anova_1way)
-
-# Проверка значимости
-if anova_1way["PR(>F)"][0] < 0.05:
-    print("\nВывод: Регион значимо влияет на Y (p = {:.4f})".format(anova_1way["PR(>F)"][0]))
+if anova_1way.loc["C(Region)", "PR(>F)"] < 0.05:
+    print(f"\nВывод: Регион значимо влияет на Y (p={anova_1way.loc['C(Region)', 'PR(>F)']:.4f})")
 else:
-    print("\nВывод: Регион НЕ влияет значимо на Y (p = {:.4f})".format(anova_1way["PR(>F)"][0]))
+    print(f"\nВывод: Регион НЕ оказывает значимого влияния на Y (p={anova_1way.loc['C(Region)', 'PR(>F)']:.4f})")
 
 # =============================================
-# ЗАДАЧА 5.2: Проверка влияния региона (A) и фактора B на Y
+# ЗАДАЧА 5.2: Двухфакторный ANOVA (Регион + B)
 # =============================================
-
-# Создаем правильный объединенный датафрейм
+# Создаем объединенный датафрейм
 combined_data = pd.DataFrame()
-
-# Для каждого региона добавляем соответствующие значения Y и B
 for region in ['С', 'Ю', 'Ц']:
-    # Создаем временный датафрейм для текущего региона
     temp_df = pd.DataFrame({
         'Region': region,
-        'Y': data[region],  # Значения Y для текущего региона
-        'B': data['B']      # Соответствующие значения B
+        'Y': data[region],
+        'B': data['B']
     })
-    
-    # Объединяем с основным датафреймом
     combined_data = pd.concat([combined_data, temp_df], ignore_index=True)
 
-# Очистка данных:
-# 1. Заменяем бесконечности на NaN
-combined_data = combined_data.replace([np.inf, -np.inf], np.nan)
-# 2. Удаляем строки с пропущенными значениями
-combined_data = combined_data.dropna()
-# 3. Проверяем, что остались данные
-if combined_data.empty:
-    raise ValueError("После очистки не осталось данных для анализа")
+# Очистка данных
+combined_data = combined_data.replace([np.inf, -np.inf], np.nan).dropna()
 
-# Преобразуем категориальные переменные
-combined_data['Region'] = combined_data['Region'].astype('category')
-combined_data['B'] = combined_data['B'].astype('category')
+# Группируем B в 5 категорий для устойчивости анализа
+combined_data['B_group'] = pd.cut(combined_data['B'], bins=5)
 
-# Двухфакторный ANOVA с проверкой ошибок
+print("\n" + "=" * 50)
+print("РЕЗУЛЬТАТЫ ДЛЯ ЗАДАЧИ 5.2:")
+
 try:
     # Модель без взаимодействия
-    model_2way = ols('Y ~ C(Region) + C(B)', data=combined_data).fit()
-    anova_2way = sm.stats.anova_lm(model_2way, typ=2)
-    
-    # Модель с взаимодействием
-    model_interaction = ols('Y ~ C(Region) * C(B)', data=combined_data).fit()
-    anova_interaction = sm.stats.anova_lm(model_interaction, typ=2)
-    
-    print("\n" + "="*50)
-    print("РЕЗУЛЬТАТЫ ДЛЯ ЗАДАЧИ 5.2:")
-    print("\nДвухфакторный ANOVA без взаимодействия:")
-    print(anova_2way)
-    print("\nДвухфакторный ANOVA с взаимодействием:")
-    print(anova_interaction)
+    model_main = ols('Y ~ C(Region) + C(B_group)', data=combined_data).fit()
+    anova_main = sm.stats.anova_lm(model_main, typ=2)
 
-    # Проверка значимости взаимодействия
-    if "C(Region):C(B)" in anova_interaction.index:
-        interaction_p = anova_interaction.loc["C(Region):C(B)", "PR(>F)"]
-        print("\nВывод:", 
-              "Взаимодействие значимо (p = {:.4f})".format(interaction_p) if interaction_p < 0.05 
-              else "Взаимодействие незначимо (p = {:.4f})".format(interaction_p))
+    # Модель с взаимодействием
+    model_interaction = ols('Y ~ C(Region) * C(B_group)', data=combined_data).fit()
+    anova_interaction = sm.stats.anova_lm(model_interaction, typ=2)
+
+    # Вывод результатов
+    print("\nОсновные эффекты:")
+    print(anova_main[['sum_sq', 'df', 'F', 'PR(>F)']])
+
+    print("\nЭффекты взаимодействия:")
+    print(anova_interaction[['sum_sq', 'df', 'F', 'PR(>F)']])
+
+    # Анализ значимости
+    print("\nВыводы:")
+
+    # 1. Проверка значимости регионов
+    region_p = anova_main.loc["C(Region)", "PR(>F)"]
+    if region_p < 0.05:
+        print(f"- Регион значимо влияет на Y (p={region_p:.4f})")
+    else:
+        print(f"- Регион НЕ оказывает значимого влияния на Y (p={region_p:.4f})")
+
+    # 2. Проверка значимости фактора B
+    b_p = anova_main.loc["C(B_group)", "PR(>F)"]
+    if b_p < 0.05:
+        print(f"- Фактор B значимо влияет на Y (p={b_p:.4f})")
+    else:
+        print(f"- Фактор B НЕ оказывает значимого влияния на Y (p={b_p:.4f})")
+
+    # 3. Проверка взаимодействия
+    if "C(Region):C(B_group)" in anova_interaction.index:
+        interaction_p = anova_interaction.loc["C(Region):C(B_group)", "PR(>F)"]
+        if interaction_p < 0.05:
+            print(f"- Обнаружено значимое взаимодействие между регионом и фактором B (p={interaction_p:.4f})")
+        else:
+            print(f"- Взаимодействие между регионом и фактором B незначимо (p={interaction_p:.4f})")
 
 except Exception as e:
-    print("\nОшибка при выполнении ANOVA:", str(e))
-    print("\nДанные для отладки:")
-    print("Размер combined_data:", combined_data.shape)
-    print("Пропущенные значения:", combined_data.isna().sum())
-    print("Уникальные значения Region:", combined_data['Region'].unique())
-    print("Уникальные значения B:", combined_data['B'].unique())
-    raise
+    print(f"\nОшибка при выполнении ANOVA: {str(e)}")
