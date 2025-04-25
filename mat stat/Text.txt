@@ -5,20 +5,26 @@ from statsmodels.formula.api import ols
 
 
 def load_and_clean_data():
-    """Загрузка и очистка данных из файла с указанной структурой"""
+    """Загрузка и очистка данных из файла"""
     try:
-        # Загрузка данных - убедимся, что первая строка - заголовок
+        # Загрузка данных с явным указанием заголовка
         df = pd.read_excel('iskhodnye.xlsx', sheet_name='Задание 5', header=0)
         print(f"Загружено строк: {len(df)}")
-        
-        # Проверка, что столбцы соответствуют ожидаемым
-        expected_cols = ['С', 'Ю', 'Ц', 'Y', 'B']
-        if not all(col in df.columns for col in expected_cols):
-            raise ValueError(f"Ожидались столбцы: {expected_cols}, получены: {df.columns.tolist()}")
 
-        # Очистка данных
-        df_clean = df.replace([np.inf, -np.inf], np.nan).dropna()
-        df_clean = df_clean[(df_clean.select_dtypes(include=[np.number]) != 0).all(axis=1)]
+        # Проверка необходимых столбцов
+        required_cols = ['С', 'Ю', 'Ц', 'Y', 'B']
+        if not all(col in df.columns for col in required_cols):
+            raise ValueError(f"Отсутствуют необходимые столбцы. Ожидались: {required_cols}")
+
+        # Глубокая очистка данных
+        df_clean = df.replace([np.inf, -np.inf], np.nan)
+        
+        # Удаление строк с NaN в любом из нужных столбцов
+        df_clean = df_clean.dropna(subset=required_cols)
+        
+        # Удаление строк с нулевыми значениями в числовых столбцах
+        numeric_cols = df_clean.select_dtypes(include=[np.number]).columns
+        df_clean = df_clean[(df_clean[numeric_cols] != 0).all(axis=1)]
         
         print(f"Строк после очистки: {len(df_clean)}")
         return df_clean
@@ -28,84 +34,67 @@ def load_and_clean_data():
         return None
 
 
-def task_5_1(df):
-    """Анализ для задачи 5.1"""
-    try:
-        # Подготовка данных
-        df_melted = pd.melt(df, id_vars=['Y', 'B'],
-                           value_vars=['С', 'Ю', 'Ц'],
-                           var_name='Region', value_name='Value').dropna()
-
-        if len(df_melted) < 2:
-            raise ValueError("Недостаточно данных для анализа")
-
-        # ANOVA анализ
-        model = ols('Y ~ C(Region)', data=df_melted).fit()
-        anova_table = sm.stats.anova_lm(model, typ=2)
-
-        print("\n=== Задача 5.1 ===")
-        print("Результаты дисперсионного анализа:")
-        print(anova_table)
-
-        if 'C(Region)' in anova_table.index:
-            p_value = anova_table.loc['C(Region)', 'PR(>F)']
-            print(f"\nВывод: Влияние региона на Y {'значимо' if p_value < 0.05 else 'не значимо'} (p-value={p_value:.4f})")
-        else:
-            print("Не удалось определить значимость региона")
-
-    except Exception as e:
-        print(f"Ошибка в задаче 5.1: {str(e)}")
-
-
 def task_5_2(df):
-    """Анализ для задачи 5.2"""
+    """Анализ для задачи 5.2 с улучшенной обработкой данных"""
     try:
-        # Подготовка данных
+        # Подготовка данных с дополнительной проверкой
         df_melted = pd.melt(df, id_vars=['Y', 'B'],
                            value_vars=['С', 'Ю', 'Ц'],
-                           var_name='Region', value_name='Value').dropna()
+                           var_name='Region', value_name='Value')
+        
+        # Дополнительная очистка после melt
+        df_melted = df_melted.replace([np.inf, -np.inf], np.nan)
+        df_melted = df_melted.dropna()
+        
+        if len(df_melted) < 10:
+            raise ValueError(f"Недостаточно данных после очистки. Доступно строк: {len(df_melted)}")
 
-        if len(df_melted) < 2:
-            raise ValueError("Недостаточно данных для анализа")
-
-        # Преобразование B в категориальный, если нужно
+        # Преобразование B в категориальный при необходимости
         if df_melted['B'].nunique() < 5:
             df_melted['B'] = df_melted['B'].astype('category')
+            print("\nФактор B преобразован в категориальный")
+
+        # Проверка на inf/NaN в Y
+        if df_melted['Y'].isnull().any() or np.isinf(df_melted['Y']).any():
+            raise ValueError("Обнаружены некорректные значения в Y после преобразования")
 
         print("\n=== Задача 5.2 ===")
+        print(f"Доступно строк для анализа: {len(df_melted)}")
 
         # Модель с взаимодействием
         model_with_int = ols('Y ~ C(Region) * C(B)', data=df_melted).fit()
         anova_with_int = sm.stats.anova_lm(model_with_int, typ=2)
-        print("Результаты двухфакторного ANOVA с взаимодействием:")
+        print("\nРезультаты двухфакторного ANOVA с взаимодействием:")
         print(anova_with_int)
 
-        # Проверка значимости
-        significant_terms = []
-        if 'C(Region)' in anova_with_int.index:
-            p_region = anova_with_int.loc['C(Region)', 'PR(>F)']
-            print(f"Регион: {'значим' if p_region < 0.05 else 'не значим'} (p={p_region:.4f})")
-        
-        if 'C(B)' in anova_with_int.index:
-            p_b = anova_with_int.loc['C(B)', 'PR(>F)']
-            print(f"Фактор B: {'значим' if p_b < 0.05 else 'не значим'} (p={p_b:.4f})")
-        
-        if 'C(Region):C(B)' in anova_with_int.index:
-            p_inter = anova_with_int.loc['C(Region):C(B)', 'PR(>F)']
-            print(f"Взаимодействие: {'значимо' if p_inter < 0.05 else 'не значимо'} (p={p_inter:.4f})")
+        # Проверка значимости с защитой от отсутствующих терминов
+        terms_to_check = ['C(Region)', 'C(B)', 'C(Region):C(B)']
+        for term in terms_to_check:
+            if term in anova_with_int.index:
+                p_value = anova_with_int.loc[term, 'PR(>F)']
+                print(f"{term}: {'значимо' if p_value < 0.05 else 'не значимо'} (p={p_value:.4f})")
+            else:
+                print(f"Термин {term} отсутствует в ANOVA таблице")
 
     except Exception as e:
-        print(f"Ошибка в задаче 5.2: {str(e)}")
+        print(f"\nОшибка в задаче 5.2: {str(e)}")
+        # Дополнительная диагностика
+        if 'df_melted' in locals():
+            print("\nДиагностическая информация:")
+            print("Пропущенные значения по столбцам:")
+            print(df_melted.isnull().sum())
+            print("\nОписательная статистика Y:")
+            print(df_melted['Y'].describe())
 
 
 def main():
     # Загрузка и очистка данных
     df = load_and_clean_data()
-    if df is None:
+    if df is None or len(df) == 0:
+        print("Невозможно продолжить - данные не загружены или пусты")
         return
 
     # Выполнение анализа
-    task_5_1(df)
     task_5_2(df)
 
 
