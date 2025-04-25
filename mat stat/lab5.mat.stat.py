@@ -70,11 +70,3 @@ try:
 except Exception as e:
     print("\nОшибка в ANOVA:", str(e))
     print("Проверьте данные на пропущенные значения или выбросы")
-
-# Проверка остатков (для последней модели)
-if 'model' in locals():
-    residuals = model.resid
-    shapiro_test = stats.shapiro(residuals)
-    print("\nТест Шапиро-Уилка (нормальность остатков):",
-          "p =", shapiro_test[1],
-          "(нормальные)" if shapiro_test[1] > 0.05 else "(не нормальные)")
