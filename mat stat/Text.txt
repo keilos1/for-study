@@ -3,18 +3,21 @@ import statsmodels.api as sm
 from statsmodels.formula.api import ols
 from scipy import stats
 
-# Загрузка данных (предполагаем, что данные в столбцах 'С', 'Ю', 'Ц', 'Y', 'B')
+# Загрузка данных
 data = pd.read_excel("ishodnye.xlsx", sheet_name="Задание 5")
 
 # =============================================
 # ЗАДАЧА 5.1: Проверка влияния региона (фактор A) на Y
 # =============================================
 
-# Преобразуем данные из широкого формата в длинный (если нужно)
-data_long = pd.melt(data, value_vars=['С', 'Ю', 'Ц'], var_name='Region', value_name='Y')
+# Преобразуем из широкого в длинный формат (столбцы С, Ю, Ц -> Region/Y)
+data_long = pd.melt(data, 
+                   value_vars=['С', 'Ю', 'Ц'], 
+                   var_name='Region', 
+                   value_name='Y_value')
 
 # Однофакторный ANOVA
-model_1way = ols('Y ~ C(Region)', data=data_long).fit()
+model_1way = ols('Y_value ~ C(Region)', data=data_long).fit()
 anova_1way = sm.stats.anova_lm(model_1way, typ=2)
 
 print("="*50)
@@ -32,12 +35,23 @@ else:
 # ЗАДАЧА 5.2: Проверка влияния региона (A) и фактора B на Y
 # =============================================
 
+# Создаем объединенный DataFrame для двухфакторного ANOVA
+# Для каждого наблюдения из С/Ю/Ц добавляем соответствующее значение B
+combined_data = pd.DataFrame()
+for region in ['С', 'Ю', 'Ц']:
+    temp_df = pd.DataFrame({
+        'Region': region,
+        'Y': data[region],
+        'B': data['B']
+    })
+    combined_data = pd.concat([combined_data, temp_df], ignore_index=True)
+
 # Двухфакторный ANOVA без взаимодействия
-model_2way = ols('Y ~ C(Region) + C(B)', data=data).fit()
+model_2way = ols('Y ~ C(Region) + C(B)', data=combined_data).fit()
 anova_2way = sm.stats.anova_lm(model_2way, typ=2)
 
 # Двухфакторный ANOVA с взаимодействием
-model_interaction = ols('Y ~ C(Region) * C(B)', data=data).fit()
+model_interaction = ols('Y ~ C(Region) * C(B)', data=combined_data).fit()
 anova_interaction = sm.stats.anova_lm(model_interaction, typ=2)
 
 print("\n" + "="*50)
@@ -56,13 +70,12 @@ else:
     print("\nВывод: Взаимодействие региона и фактора B НЕзначимо (p = {:.4f})".format(interaction_p))
     print("Можно использовать модель без взаимодействия.")
 
-# Проверка остатков на нормальность для лучшей модели
-best_model = model_interaction if interaction_p < 0.05 else model_2way
-residuals = best_model.resid
+# Проверка остатков на нормальность
+residuals = model_interaction.resid if interaction_p < 0.05 else model_2way.resid
 shapiro_test = stats.shapiro(residuals)
 
 print("\n" + "="*50)
-print("ПРОВЕРКА ОСТАТКОВ ЛУЧШЕЙ МОДЕЛИ:")
+print("ПРОВЕРКА ОСТАТКОВ:")
 print("Тест Шапиро-Уилка на нормальность остатков:")
 print("Статистика: {:.4f}, p-value: {:.4f}".format(shapiro_test[0], shapiro_test[1]))
 if shapiro_test[1] > 0.05:
