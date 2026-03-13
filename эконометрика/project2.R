@@ -1,5 +1,5 @@
 # Установка пакетов
-packages <- c("readxl", "dplyr", "tidyr", "ggplot2", "lmtest", "sandwich", "car")
+packages <- c("readxl", "dplyr", "tidyr", "ggplot2", "lmtest")
 for (pkg in packages) {
   if (!require(pkg, character.only = TRUE)) {
     install.packages(pkg)
@@ -11,9 +11,9 @@ options(scipen = 999)
 options(readr.show_col_types = FALSE)
 
 # Пути к файлам
-file_apartments <- "G:/Учеба/Эконометрика/Количество построенных квартир.xlsx"
-file_income <- "G:/Учеба/Эконометрика/Среднедушевые денежные доходы.xlsx"
-file_features <- "G:/Учеба/Эконометрика/region_features.csv"
+file_apartments <- "C:/Users/keilos/Desktop/учёба/Эконометрика/Количество построенных квартир.xlsx"
+file_income <- "C:/Users/keilos/Desktop/учёба/Эконометрика/Среднедушевые денежные доходы.xlsx"
+file_features <- "C:/Users/keilos/Desktop/учёба/Эконометрика/region_features.csv"
 
 # Загружаем данные
 df_apartments_raw <- suppressMessages(
@@ -94,22 +94,21 @@ missing_after_join <- df_full %>%
   unique()
 
 if (length(missing_after_join) > 0) {
-  cat("\n\nРегионы, которые не соединились (проблема с названиями):\n")
+  cat("\nРегионы, которые не соединились (проблема с названиями):\n")
   print(missing_after_join)
 } else {
-  cat("\n\nВсе регионы успешно соединились!\n")
+  cat("\nВсе регионы успешно соединились!\n")
 }
 
 # Удаляем строки с пропущенными значениями
 df_full <- df_full %>% filter(!is.na(Federal_District))
 
 cat("\nИтоговая размерность данных:", nrow(df_full), "наблюдений,", ncol(df_full), "переменных")
-cat("\nФакторы для анализа:", paste(c("Income", "Population", "Latitude", "Distance_to_Moscow", "Federal_District"), collapse = ", "))
+cat("\nФакторы для анализа: Income, Population, Latitude, Distance_to_Moscow, Federal_District")
 
 cat("\n\n 1. МНОЖЕСТВЕННАЯ РЕГРЕССИЯ \n")
 
 # Строим модель с автоматическим созданием фиктивных переменных
-# as.factor() преобразует Federal_District в набор dummy-переменных
 model_multiple <- lm(Apartments ~ Income + Population + Latitude + Distance_to_Moscow + 
                        as.factor(Federal_District), 
                      data = df_full)
@@ -123,7 +122,7 @@ tryCatch({
   vif_values <- vif(model_multiple)
   print(vif_values)
 }, error = function(e) {
-  cat("Не удалось рассчитать VIF (возможно из-за фиктивных переменных)\n")
+  cat("Не удалось рассчитать VIF\n")
 })
 
 cat("\n\n 2. РЕГРЕССИЯ В СТАНДАРТИЗОВАННОМ ВИДЕ \n")
@@ -144,12 +143,11 @@ df_std <- df_full %>%
   )
 
 # Строим регрессию на стандартизованных переменных
-# Для сравнения силы влияния оставляем все переменные (без константы)
 model_std <- lm(Apartments_std ~ Income_std + Population_std + Latitude_std + Distance_std +
                   as.factor(Federal_District) - 1,  # -1 чтобы убрать intercept
                 data = df_std)
 
-cat("\nРегрессия в стандартизованном виде (бета-коэффициенты):\n")
+cat("\nРегрессия в стандартизованном виде:\n")
 summary_std <- summary(model_std)
 print(summary_std)
 
